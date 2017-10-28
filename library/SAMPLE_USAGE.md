@@ -1,0 +1,18 @@
+Sample CLI Usage:
+
+```
+00:37 $ jwt validate --jwt="eyJhbGciOiJSUzUxMiIsInNpZ19raWQiOiI0MjEyN2U1NS1kMDdlLTQ4MDgtOTFkYi1lNjljZTg5MmZmZDQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhZHJpYW5vc2VsYS9hbGwiLCJleHAiOjE1MDg2NjE0MTEsImp0aSI6IjhjMjQ2NmI3LWNmMWYtNDIxMy04NWJmLWNiOTEwYTFlNWI3NSIsImlhdCI6MTUwODY1NzgxMSwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgwIiwibmJmIjoxNTA4NjU3ODExLCJzdWIiOiIzM2Q1NjY5OC1mMWFhLTQ0ZjAtOWNiNC1mYzJhOTYxZjAxYTQiLCJncnBzIjpbIjJhMmY4YjhjLTlkM2QtNGE3ZS05YzIyLWU4NzI4YjQ3NDI4MSIsIjQ3MDFlZDAwLWExYWUtNDgwMi05ODZlLTZlMmFlNjgzMWQ3OSJdfQ.DjjOGexuBj6Y5jFGgF9-aFzlpHiDDzCPMT6y9NR7oBhaRJeiryO9cHW0Zf7HrOacAk3Jm-cygh_xtam0foFWwEe78YrxWsDBecSnsQnbjgXfOI5yQcmPu_BsUpr2dWcJTQlJJKfarWcVx-2bjbW9vXgSSV3QP0DWmGkZH6qcfLj-ItXTWifPPKRhU97KzOKJkh9Z4h8aHtVpC3AeV2fVsoIQMp_DPW32TEJR77RehsQyYTVv0lXqI7OpfZAFR17v7WDouf2Hi-HxOE29C8kmvVN6ZSz1dD_lvKjIAMJACg8TdZZzaPbSfnyxWFcCiiAUr9wLmUjowoHENDaV5Y41Rg" --iss="http://localhost:8080" | jq -r .
+{
+  "aud": "adrianosela/all",
+  "exp": 1508661411,
+  "jti": "8c2466b7-cf1f-4213-85bf-cb910a1e5b75",
+  "iat": 1508657811,
+  "iss": "http://localhost:8080",
+  "nbf": 1508657811,
+  "sub": "33d56698-f1aa-44f0-9cb4-fc2a961f01a4",
+  "grps": [
+    "2a2f8b8c-9d3d-4a7e-9c22-e8728b474281",
+    "4701ed00-a1ae-4802-986e-6e2ae6831d79"
+  ]
+}
+```
