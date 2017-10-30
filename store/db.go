@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/rsa"
 	"net/http"
+	"time"
 )
 
 //Datastore will allow us to implement a database in multiple ways
@@ -29,13 +30,13 @@ type Datastore interface {
 	DeleteUser(string) error
 
 	//saveKey will add a new key to the database
-	SaveKey(string, string, *rsa.PrivateKey) error
+	SaveKey(string, *rsa.PrivateKey, time.Duration) error
 
 	//deleteKey will remove a key from the database
 	DeleteKey(string) error
 
 	//saveKey will add a new key to the database
-	GetKeys() (map[string]*Key, error)
+	GetKeys() (map[string]*KeyMetadata, error)
 
 	//HTTP Endpoint Handler for sharing Keys
 	SharePubKeyHandler(http.ResponseWriter, *http.Request)
@@ -68,4 +69,11 @@ type User struct {
 	ID     string `json:"id"`
 	Secret []byte `json:"hashed"`
 	Email  string `json:"email"`
+}
+
+//KeyMetadata represents the format in which we will cache and store keys
+type KeyMetadata struct {
+	KeyPem       []byte    `json:"key_pem"`
+	ID           string    `json:"key_id"`
+	InvalidAfter time.Time `json:"expires"`
 }

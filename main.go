@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/adrianosela/AuthService/api"
 	"github.com/adrianosela/AuthService/keys"
@@ -75,7 +76,7 @@ func main() {
 
 	log.Printf("[INFO] Generated New Key-Pair: {\"id\":\"%s\"}\n%s", id, string(block))
 
-	err = rtrConfig.DB.SaveKey(id, "TestKey", key)
+	err = rtrConfig.DB.SaveKey(id, key, time.Duration(time.Hour*12))
 	if err != nil {
 		log.Fatalf("[ERROR] Could not set Key: %v", err)
 	}

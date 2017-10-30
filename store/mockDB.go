@@ -1,12 +1,14 @@
 package store
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -24,7 +26,7 @@ type MockDB struct {
 	sync.RWMutex //inherit lock behavior
 	Groups       map[string]*Group
 	Users        map[string]*User
-	PublicKeys   map[string]*Key
+	PublicKeys   map[string]*KeyMetadata
 	SigningKey   *rsa.PrivateKey
 	SigningKeyID string
 }
@@ -34,7 +36,7 @@ func NewMockDB() *MockDB {
 	return &MockDB{
 		Groups:       map[string]*Group{},
 		Users:        map[string]*User{},
-		PublicKeys:   map[string]*Key{},
+		PublicKeys:   map[string]*KeyMetadata{},
 		SigningKey:   nil,
 		SigningKeyID: "",
 	}
@@ -160,7 +162,7 @@ func (db *MockDB) DeleteUser(id string) error {
 }
 
 //saveKey will add a new key to the database given an an id and a description
-func (db *MockDB) SaveKey(id, descr string, key *rsa.PrivateKey) error {
+func (db *MockDB) SaveKey(id string, key *rsa.PrivateKey, lifetime time.Duration) error {
 	db.Lock()
 	defer db.Unlock()
 
@@ -176,11 +178,38 @@ func (db *MockDB) SaveKey(id, descr string, key *rsa.PrivateKey) error {
 		log.Fatal("[ERROR] Could not convert key to pem")
 	}
 	//add the key to the map
-	db.PublicKeys[id] = &Key{
-		ID:          id,
-		Description: descr,
-		Bytes:       pemkey,
+	keyStruct := KeyMetadata{
+		ID:           id,
+		KeyPem:       pemkey,
+		InvalidAfter: time.Now().Add(lifetime),
 	}
+
+	db.PublicKeys[id] = &keyStruct
+
+	//FIXME begin
+
+	bts, err := json.Marshal(keyStruct)
+	if err != nil {
+		log.Fatal("[ERROR] Could not marshall key")
+		return errors.New("[ERROR] Could not marshall key")
+	}
+
+	req, err := http.NewRequest("POST", "http://keystore.adrianosela.com/key", bytes.NewBuffer(bts))
+	if err != nil {
+		log.Fatal("[ERROR] Could not publish key to keystore")
+		return errors.New("[ERROR] Could not publish key to keystore")
+	}
+
+	cli := http.Client{}
+
+	resp, err := cli.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		log.Fatal("[ERROR] Could not publish key to keystore" + strconv.Itoa(resp.StatusCode))
+		return errors.New("[ERROR] Could not publish key to keystore")
+	}
+
+	//FIXME end
+
 	log.Printf("[KEYS] Added New Key: {\"id\":\"%s\"}", id)
 	return nil
 }
@@ -200,7 +229,7 @@ func (db *MockDB) DeleteKey(id string) error {
 	return fmt.Errorf("Key with id=%s not found in store", id)
 }
 
-func (db *MockDB) GetKeys() (map[string]*Key, error) {
+func (db *MockDB) GetKeys() (map[string]*KeyMetadata, error) {
 	db.Lock()
 	defer db.Unlock()
 	return db.PublicKeys, nil
@@ -236,7 +265,7 @@ func (db *MockDB) SharePubKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	for kid, key := range keys {
 		keyset.Keys = append(keyset.Keys, jose.JsonWebKey{
-			Key:       key.Bytes,
+			Key:       key.KeyPem,
 			Algorithm: "RS512",
 			Use:       "sig",
 			KeyID:     kid,

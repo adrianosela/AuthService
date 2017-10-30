@@ -1,22 +1,22 @@
 version: '3'
 services:
-  identity_provider_a:
-    image: authservice
-    build: .
+  keystore.adrianosela.com: #because I own adrianosela.com
+    image: keystore
+    build: ../Keystore/
     ports:
-     - "8080:8888"
-  identity_provider_b:
+     - "8080:80"
+  identity_provider_A:
     image: authservice
     build: .
     ports:
      - "8081:8888"
-  identity_provider_c:
+  identity_provider_B:
     image: authservice
     build: .
     ports:
      - "8082:8888"
-  keystore:
-    image: keystore
-    build: ../Keystore/
+  identity_provider_C:
+    image: authservice
+    build: .
     ports:
-     - "8083:80"
+     - "8083:8888"
