@@ -6,12 +6,17 @@ services:
     ports:
      - "8080:8888"
   identity_provider_b:
-    image: auth
+    image: authservice
     build: .
     ports:
      - "8081:8888"
   identity_provider_c:
-    image: auth
+    image: authservice
     build: .
     ports:
      - "8082:8888"
+  keystore:
+    image: keystore
+    build: ../Keystore/
+    ports:
+     - "8083:80"

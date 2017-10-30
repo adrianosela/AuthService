@@ -3,8 +3,6 @@ package keystore
 import (
 	"bytes"
 	"crypto/rsa"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,32 +29,11 @@ type RESTKeystore struct {
 }
 
 func NewRESTKeystore(certFile, keyFile, CAFile string) *RESTKeystore {
-	// Load client cert
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Load CA cert
-	CACert, err := ioutil.ReadFile(CAFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	CACertPool := x509.NewCertPool()
-	CACertPool.AppendCertsFromPEM(CACert)
-	// Setup HTTPS client
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs:      CACertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	client := http.Client{
-		Transport: transport,
-		Timeout:   time.Duration(time.Second * 60),
-	}
-	//return a keystore struct with the tls client
+	//return a keystore struct
 	return &RESTKeystore{
-		HTTPClient: client,
+		HTTPClient: http.Client{
+			Timeout: time.Duration(time.Second * 60),
+		},
 		CachedKeys: map[string]*KeyMetadata{},
 	}
 }
@@ -79,7 +56,7 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 		return fmt.Errorf("Could not marshall key: %s. %s", keyID, err)
 	}
 	//create the http request
-	req, err := http.NewRequest("POST", RESTkeystoreURL+"save", bytes.NewBuffer(jsonKeyMeta))
+	req, err := http.NewRequest("POST", "http://keystore/key/"+keyID, bytes.NewBuffer(jsonKeyMeta))
 	if err != nil {
 		return fmt.Errorf("Could not create POST request to RESTKeystore API for key: %s. %s", keyID, err)
 	}
@@ -93,7 +70,6 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 	}
 	//if the POST succeeded, then save to the local cache
 	if resp.StatusCode == http.StatusOK {
-
 		ks.CachedKeys[keyID] = &keyMeta
 		return nil
 	}
@@ -151,7 +127,7 @@ func (ks *RESTKeystore) refreshCache() error {
 
 func (ks *RESTKeystore) getKeyMetadata(keyID string) (*KeyMetadata, error) {
 	//create the http request to get the Key
-	req, err := http.NewRequest("GET", RESTkeystoreURL+"keys/"+keyID, nil)
+	req, err := http.NewRequest("GET", "http://keystore/key/"+keyID, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create GET request to RESTKeystore API. %s", err)
 	}
