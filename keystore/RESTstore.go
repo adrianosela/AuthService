@@ -9,35 +9,44 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/adrianosela/AuthService/keys"
+	"github.com/adrianosela/Keystore/keystoreapi"
 	jwt "github.com/dgrijalva/jwt-go"
+	jose "github.com/square/go-jose"
 )
 
 var (
-	RESTkeystoreURL = os.Getenv("KEYSTORE_URL")
+	//RESTkeystoreURL is our keystore service URL
+	RESTkeystoreURL = "http://keystore.adrianosela.com"
 )
 
 //RESTKeystore is a client of my own REST keystore found in github.com/adrianosela/Keystore
 type RESTKeystore struct {
 	sync.RWMutex //inherit read/write lock behavior
 	HTTPClient   http.Client
-	CachedKeys   map[string]*KeyMetadata `json:"keys"`
+	CachedKeys   map[string]*keystoreAPI.KeyMetadata `json:"keys"`
 }
 
-func NewRESTKeystore(certFile, keyFile, CAFile string) *RESTKeystore {
+//NewRESTKeystore returns the addr of a new keystore object
+func NewRESTKeystore() (*RESTKeystore, error) {
 	//return a keystore struct
-	return &RESTKeystore{
+	ks := &RESTKeystore{
 		HTTPClient: http.Client{
-			Timeout: time.Duration(time.Second * 60),
+			Timeout: time.Duration(time.Second * 15), //a sane timeout
 		},
-		CachedKeys: map[string]*KeyMetadata{},
+		CachedKeys: map[string]*keystoreAPI.KeyMetadata{},
 	}
+	err := ks.refreshCache()
+	if err != nil {
+		return nil, fmt.Errorf("Could not refresh the cached keys. %s", err)
+	}
+	return ks, nil
 }
 
+//SavePubKey will cache a given key locally as well as publish it to the RESTKeystore
 func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan time.Duration) error {
 	//convert the key to PEM
 	pemKey, err := keys.RSAPublicKeyToPEM(pubKey)
@@ -45,7 +54,7 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 		return fmt.Errorf("Could not convert key: %s, to pem. %s", keyID, err)
 	}
 	//put it in the KeyMetadata struct
-	keyMeta := KeyMetadata{
+	keyMeta := keystoreAPI.KeyMetadata{
 		ID:           keyID,
 		InvalidAfter: time.Now().Add(lifespan),
 		KeyPem:       pemKey,
@@ -56,13 +65,13 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 		return fmt.Errorf("Could not marshall key: %s. %s", keyID, err)
 	}
 	//create the http request
-	req, err := http.NewRequest("POST", "http://keystore/key/"+keyID, bytes.NewBuffer(jsonKeyMeta))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/key", RESTkeystoreURL), bytes.NewBuffer(jsonKeyMeta))
 	if err != nil {
 		return fmt.Errorf("Could not create POST request to RESTKeystore API for key: %s. %s", keyID, err)
 	}
 	//grab and set the release of the write lock
-	ks.Lock()
-	defer ks.Unlock()
+	ks.RLock()
+	defer ks.RUnlock()
 	//send it over the Keystore's HTTPClient
 	resp, err := ks.HTTPClient.Do(req)
 	if err != nil {
@@ -76,7 +85,7 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 	return fmt.Errorf("POST to RESTKeystore was not successful. Status Code = %d", resp.StatusCode)
 }
 
-func (ks *RESTKeystore) GetKeys() (map[string]*rsa.PublicKey, error) {
+func (ks *RESTKeystore) GetPubKeys() (map[string]*rsa.PublicKey, error) {
 	err := ks.refreshCache()
 	if err != nil {
 		return nil, fmt.Errorf("Could not refresh the cached keys. %s", err)
@@ -125,20 +134,18 @@ func (ks *RESTKeystore) refreshCache() error {
 	return nil
 }
 
-func (ks *RESTKeystore) getKeyMetadata(keyID string) (*KeyMetadata, error) {
+func (ks *RESTKeystore) getKeyMetadata(keyID string) (*keystoreAPI.KeyMetadata, error) {
 	//create the http request to get the Key
-	req, err := http.NewRequest("GET", "http://keystore/key/"+keyID, nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/key/%s", RESTkeystoreURL, keyID), nil)
 	if err != nil {
 		return nil, fmt.Errorf("Could not create GET request to RESTKeystore API. %s", err)
 	}
 
-	var resp *http.Response
-	defer resp.Body.Close()
 	retries := 0
 	err = errors.New("")
 	//we will attempt to get the key three times
 	for err != nil && retries < 3 {
-		resp, err = ks.HTTPClient.Do(req)
+		resp, err := ks.HTTPClient.Do(req)
 		retries++
 		if err != nil {
 			continue
@@ -148,7 +155,7 @@ func (ks *RESTKeystore) getKeyMetadata(keyID string) (*KeyMetadata, error) {
 		if err != nil {
 			continue
 		}
-		var keyMeta KeyMetadata
+		var keyMeta keystoreAPI.KeyMetadata
 		err = json.Unmarshal(jsonBytes, &keyMeta)
 		if err != nil {
 			continue
@@ -159,11 +166,65 @@ func (ks *RESTKeystore) getKeyMetadata(keyID string) (*KeyMetadata, error) {
 }
 
 func (ks *RESTKeystore) getKeyIDs() ([]string, error) {
-	var kids []string
-	return kids, nil
-	//TODO
+	//create request
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/keys", RESTkeystoreURL), nil)
+	if err != nil {
+		return nil, errors.New("Could not create GET request for keys")
+	}
+	//send the request
+	resp, err := ks.HTTPClient.Do(req)
+	if err != nil {
+		return nil, errors.New("Could not send GET request for keys")
+	}
+	defer resp.Body.Close()
+	//read the bytes off the body
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, errors.New("Could not read response for keys")
+	}
+	//unmarshall onto a type dictated by the keystore API
+	var list keystoreAPI.GetKeyListOutput
+	err = json.Unmarshal(respBytes, &list)
+	if err != nil {
+		return nil, err //errors.New("Could not unmashall keystore list response")
+	}
+	//success
+	return list.KeyIDList, nil
 }
 
 func (ks *RESTKeystore) retireExpired() {
 	//TODO
+}
+
+func (ks *RESTKeystore) SharePubKeyHandler(w http.ResponseWriter, r *http.Request) {
+	err := ks.refreshCache()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, fmt.Sprintf("[ERROR] : %v", err))
+		return
+	}
+
+	keyset := jose.JsonWebKeySet{
+		Keys: []jose.JsonWebKey{},
+	}
+
+	for kid, key := range ks.CachedKeys {
+		keyset.Keys = append(keyset.Keys, jose.JsonWebKey{
+			Key:       key.KeyPem,
+			Algorithm: "RS512",
+			Use:       "sig",
+			KeyID:     kid,
+		})
+	}
+
+	keysBytes, err := json.Marshal(keyset)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, fmt.Sprintf("[ERROR] : %v", err))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(keysBytes))
+	return
 }

@@ -10,13 +10,19 @@ services:
     build: .
     ports:
      - "8081:8888"
+    depends_on:
+     - "keystore.adrianosela.com"
   identity_provider_B:
     image: authservice
     build: .
     ports:
      - "8082:8888"
+    depends_on:
+     - "keystore.adrianosela.com"
   identity_provider_C:
     image: authservice
     build: .
     ports:
      - "8083:8888"
+    depends_on:
+     - "keystore.adrianosela.com"

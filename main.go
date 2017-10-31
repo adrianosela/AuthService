@@ -9,6 +9,7 @@ import (
 
 	"github.com/adrianosela/AuthService/api"
 	"github.com/adrianosela/AuthService/keys"
+	"github.com/adrianosela/AuthService/keystore"
 	"github.com/adrianosela/AuthService/openidconnect"
 	"github.com/adrianosela/AuthService/store"
 	uuid "github.com/satori/go.uuid"
@@ -21,9 +22,15 @@ func main() {
 		KeysURL:   "http://localhost:8888/auth/keys",
 	}
 
+	ks, err := keystore.NewRESTKeystore()
+	if err != nil {
+		log.Fatalf("[ERROR] Could not initialize keystore. %s", err)
+	}
+
 	rtrConfig := &api.RouterConfiguration{
 		IdentityProv: idp,
 		DB:           store.NewMockDB(),
+		Keystore:     ks,
 	}
 
 	//crate some example users
@@ -76,7 +83,7 @@ func main() {
 
 	log.Printf("[INFO] Generated New Key-Pair: {\"id\":\"%s\"}\n%s", id, string(block))
 
-	err = rtrConfig.DB.SaveKey(id, key, time.Duration(time.Hour*12))
+	err = rtrConfig.Keystore.SavePubKey(id, &key.PublicKey, time.Duration(time.Hour*12))
 	if err != nil {
 		log.Fatalf("[ERROR] Could not set Key: %v", err)
 	}

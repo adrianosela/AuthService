@@ -2,6 +2,7 @@ package keystore
 
 import (
 	"crypto/rsa"
+	"net/http"
 	"time"
 )
 
@@ -9,11 +10,5 @@ import (
 type Keystore interface {
 	SavePubKey(string, *rsa.PublicKey, time.Duration) error
 	GetPubKeys() (map[string]*rsa.PublicKey, error)
-}
-
-//KeyMetadata represents the format in which we will cache and store keys
-type KeyMetadata struct {
-	KeyPem       []byte    `json:"key_pem"`
-	ID           string    `json:"key_id"`
-	InvalidAfter time.Time `json:"expires"`
+	SharePubKeyHandler(http.ResponseWriter, *http.Request)
 }

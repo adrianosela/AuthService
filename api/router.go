@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/adrianosela/AuthService/keystore"
 	"github.com/adrianosela/AuthService/openidconnect"
 	"github.com/adrianosela/AuthService/store"
 	"github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 //RouterConfiguration includes the datastore and the identity provider
 type RouterConfiguration struct {
 	DB           store.Datastore
+	Keystore     keystore.Keystore
 	IdentityProv *openidconnect.OpenIDProvider
 }
 
@@ -19,7 +21,7 @@ func GetRouter(rtrConfig *RouterConfiguration) *mux.Router {
 
 	// OpenID Connect Endpoints
 	router.Methods("GET").Path("/.well-known/webfinder").HandlerFunc(rtrConfig.IdentityProv.OpenIDConfigDiscovery)
-	router.Methods("GET").Path("/auth/keys").HandlerFunc(rtrConfig.DB.SharePubKeyHandler)
+	router.Methods("GET").Path("/auth/keys").HandlerFunc(rtrConfig.Keystore.SharePubKeyHandler)
 
 	// Basic Auth Endpoints --> Emitting JWT Tokens
 	router.Methods("GET").Path("/auth/login").HandlerFunc(rtrConfig.DB.GetTokenHandler)
