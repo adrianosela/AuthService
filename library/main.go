@@ -37,6 +37,10 @@ func main() {
 					Usage: "The domain of the JWT issuer",
 				},
 				cli.StringFlag{
+					Name:  "authprov",
+					Usage: "The endpoint we wish to use for checking openID config", //default will be = issuer
+				},
+				cli.StringFlag{
 					Name:  "aud",
 					Usage: "The JWT's target audience",
 				},
@@ -56,13 +60,17 @@ func main() {
 func validate(ctx *cli.Context) error {
 	groupString := ctx.String("grps")
 	tkString := ctx.String("jwt")
-	if tkString == "" {
-		return errors.New("jwt is a required flag")
-	}
 	iss := ctx.String("iss")
-	if iss == "" {
-		return errors.New("iss is a required flag")
+	authProviderEndpoint := ctx.String("authprov")
+
+	if tkString == "" || iss == "" {
+		return errors.New("jwt and iss are required flags")
 	}
+
+	if authProviderEndpoint == "" {
+		authProviderEndpoint = iss
+	}
+
 	aud := ctx.String("aud")
 
 	grps := strings.Split(groupString, ",")
@@ -70,7 +78,7 @@ func validate(ctx *cli.Context) error {
 		grps = []string{}
 	}
 
-	cc, err := jwtvalidation.ValidateToken(tkString, iss, aud, grps)
+	cc, err := jwtvalidation.ValidateToken(tkString, iss, aud, authProviderEndpoint, grps)
 	if err != nil {
 		return fmt.Errorf("[ERROR] Could not validate JWT: %s", err)
 	}

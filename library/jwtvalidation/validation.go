@@ -18,7 +18,7 @@ import (
 )
 
 //ValidateToken returns the claims within a token as a CustomClaims obect and validates its fields
-func ValidateToken(tkString, iss, aud string, grps []string) (*customJWT.CustomClaims, error) {
+func ValidateToken(tkString, iss, aud, authProvEndpoint string, grps []string) (*customJWT.CustomClaims, error) {
 	var cc customJWT.CustomClaims
 	//parse onto a jwt token object. Note the in-line use of the KeyFunc type
 	token, err := jwt.ParseWithClaims(tkString, &cc, func(tk *jwt.Token) (interface{}, error) {
@@ -28,7 +28,7 @@ func ValidateToken(tkString, iss, aud string, grps []string) (*customJWT.CustomC
 			return nil, errors.New("Signing Key ID Not in Token Header")
 		}
 		//get the .well-known configuration
-		req, err := http.NewRequest("GET", iss+"/.well-known/webfinder", nil)
+		req, err := http.NewRequest("GET", authProvEndpoint+"/.well-known/webfinder", nil)
 		if err != nil {
 			return nil, err
 		}
