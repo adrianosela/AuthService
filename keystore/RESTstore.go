@@ -28,6 +28,8 @@ type RESTKeystore struct {
 	sync.RWMutex //inherit read/write lock behavior
 	HTTPClient   http.Client
 	CachedKeys   map[string]*keystoreAPI.KeyMetadata `json:"keys"`
+	SigningKey   *rsa.PrivateKey
+	SigningKeyID string
 }
 
 //NewRESTKeystore returns the addr of a new keystore object
@@ -47,9 +49,17 @@ func NewRESTKeystore() (*RESTKeystore, error) {
 }
 
 //SavePubKey will cache a given key locally as well as publish it to the RESTKeystore
-func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan time.Duration) error {
+func (ks *RESTKeystore) SetKeyPair(keyID string, keyPair *rsa.PrivateKey, lifespan time.Duration) error {
+	if keyPair == nil {
+		return fmt.Errorf("[ERROR] Could not set key: Key was nil, key_id = %s", keyID)
+	}
+	//grab and defer release of write lock
+	ks.Lock()
+	defer ks.Unlock()
+	ks.SigningKey = keyPair
+	ks.SigningKeyID = keyID
 	//convert the key to PEM
-	pemKey, err := keys.RSAPublicKeyToPEM(pubKey)
+	pemKey, err := keys.RSAPublicKeyToPEM(&keyPair.PublicKey)
 	if err != nil {
 		return fmt.Errorf("Could not convert key: %s, to pem. %s", keyID, err)
 	}
@@ -69,9 +79,6 @@ func (ks *RESTKeystore) SavePubKey(keyID string, pubKey *rsa.PublicKey, lifespan
 	if err != nil {
 		return fmt.Errorf("Could not create POST request to RESTKeystore API for key: %s. %s", keyID, err)
 	}
-	//grab and set the release of the write lock
-	ks.RLock()
-	defer ks.RUnlock()
 	//send it over the Keystore's HTTPClient
 	resp, err := ks.HTTPClient.Do(req)
 	if err != nil {
@@ -194,6 +201,16 @@ func (ks *RESTKeystore) getKeyIDs() ([]string, error) {
 
 func (ks *RESTKeystore) retireExpired() {
 	//TODO
+}
+
+//GetSigningKey returns the signing key along its ID and nil error if success
+func (ks *RESTKeystore) GetSigningKey() (*rsa.PrivateKey, string, error) {
+	ks.RLock()
+	defer ks.RUnlock()
+	if ks.SigningKey == nil || ks.SigningKeyID == "" {
+		return nil, "", errors.New("No Signing Key Set")
+	}
+	return ks.SigningKey, ks.SigningKeyID, nil
 }
 
 func (ks *RESTKeystore) SharePubKeyHandler(w http.ResponseWriter, r *http.Request) {

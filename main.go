@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/adrianosela/AuthService/api"
@@ -18,8 +19,8 @@ import (
 func main() {
 
 	idp := &openidconnect.OpenIDProvider{
-		IssuerURL: "http://localhost:8888",
-		KeysURL:   "http://localhost:8888/auth/keys",
+		IssuerURL: os.Getenv("IDP_ISSUER_URL"),
+		KeysURL:   os.Getenv("IDP_ISSUER_URL") + "/auth/keys",
 	}
 
 	ks, err := keystore.NewRESTKeystore()
@@ -27,41 +28,41 @@ func main() {
 		log.Fatalf("[ERROR] Could not initialize keystore. %s", err)
 	}
 
-	rtrConfig := &api.RouterConfiguration{
+	APIConfig := &api.APIConfiguration{
 		IdentityProv: idp,
 		DB:           store.NewMockDB(),
 		Keystore:     ks,
 	}
 
 	//crate some example users
-	adrianoID, _ := rtrConfig.DB.AddUser("adriano", uuid.NewV4().String(), "adriano@gmail.com")
-	miguelID, _ := rtrConfig.DB.AddUser("miguel", uuid.NewV4().String(), "miguel@gmail.com")
-	felipeID, _ := rtrConfig.DB.AddUser("felipe", uuid.NewV4().String(), "felipe@gmail.com")
-	adrianID, _ := rtrConfig.DB.AddUser("adrian", uuid.NewV4().String(), "adrian@gmail.com")
-	antonioID, _ := rtrConfig.DB.AddUser("antonio", uuid.NewV4().String(), "antonio@gmail.com")
+	adrianoID, _ := APIConfig.DB.AddUser("adriano", uuid.NewV4().String(), "adriano@gmail.com")
+	miguelID, _ := APIConfig.DB.AddUser("miguel", uuid.NewV4().String(), "miguel@gmail.com")
+	felipeID, _ := APIConfig.DB.AddUser("felipe", uuid.NewV4().String(), "felipe@gmail.com")
+	adrianID, _ := APIConfig.DB.AddUser("adrian", uuid.NewV4().String(), "adrian@gmail.com")
+	antonioID, _ := APIConfig.DB.AddUser("antonio", uuid.NewV4().String(), "antonio@gmail.com")
 
-	rtrConfig.DB.AddGroup(&store.Group{
+	APIConfig.DB.AddGroup(&store.Group{
 		ID:          uuid.NewV4().String(),
 		Name:        "Everyone",
 		Description: "Every Test User",
 		Members:     []string{adrianoID, miguelID, felipeID, adrianID, antonioID},
 		Owners:      []string{adrianoID},
 	})
-	rtrConfig.DB.AddGroup(&store.Group{
+	APIConfig.DB.AddGroup(&store.Group{
 		ID:          uuid.NewV4().String(),
 		Name:        "Developers",
 		Description: "Developer Test Users",
 		Members:     []string{adrianoID, miguelID, felipeID},
 		Owners:      []string{adrianoID},
 	})
-	rtrConfig.DB.AddGroup(&store.Group{
+	APIConfig.DB.AddGroup(&store.Group{
 		ID:          uuid.NewV4().String(),
 		Name:        "Infrastructure",
 		Description: "Infrastructure Test Users",
 		Members:     []string{adrianoID, felipeID},
 		Owners:      []string{adrianoID, felipeID},
 	})
-	rtrConfig.DB.AddGroup(&store.Group{
+	APIConfig.DB.AddGroup(&store.Group{
 		ID:          uuid.NewV4().String(),
 		Name:        "GameServer",
 		Description: "GameServer Allow-Join Users",
@@ -83,14 +84,14 @@ func main() {
 
 	log.Printf("[INFO] Generated New Key-Pair: {\"id\":\"%s\"}\n%s", id, string(block))
 
-	err = rtrConfig.Keystore.SavePubKey(id, &key.PublicKey, time.Duration(time.Hour*12))
+	err = APIConfig.Keystore.SetKeyPair(id, key, time.Duration(time.Hour*12))
 	if err != nil {
 		log.Fatalf("[ERROR] Could not set Key: %v", err)
 	}
 
-	router := api.GetRouter(rtrConfig)
-	log.Println("[INFO] Listening on http://localhost:8888")
-	err = http.ListenAndServe(":8888", router)
+	router := api.GetRouter(APIConfig)
+	log.Println("[INFO] Listening on http://localhost:80")
+	err = http.ListenAndServe(":80", router)
 	if err != nil {
 		log.Fatal("ListenAndServe Error: ", err)
 	}

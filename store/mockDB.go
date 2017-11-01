@@ -1,44 +1,30 @@
 package store
 
 import (
-	"bytes"
-	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/adrianosela/AuthService/customJWT"
-	"github.com/adrianosela/AuthService/keys"
-	jwtgo "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
-	jose "github.com/square/go-jose"
 )
 
 type MockDB struct {
 	sync.RWMutex //inherit lock behavior
 	Groups       map[string]*Group
 	Users        map[string]*User
-	PublicKeys   map[string]*KeyMetadata
-	SigningKey   *rsa.PrivateKey
-	SigningKeyID string
 }
 
 //NewMockDB returns a new MockDB
 func NewMockDB() *MockDB {
 	return &MockDB{
-		Groups:       map[string]*Group{},
-		Users:        map[string]*User{},
-		PublicKeys:   map[string]*KeyMetadata{},
-		SigningKey:   nil,
-		SigningKeyID: "",
+		Groups: map[string]*Group{},
+		Users:  map[string]*User{},
 	}
 }
 
@@ -161,80 +147,6 @@ func (db *MockDB) DeleteUser(id string) error {
 	return fmt.Errorf("User with id=%s not found in store", id)
 }
 
-//saveKey will add a new key to the database given an an id and a description
-func (db *MockDB) SaveKey(id string, key *rsa.PrivateKey, lifetime time.Duration) error {
-	db.Lock()
-	defer db.Unlock()
-
-	if key == nil {
-		log.Fatal("[KEYS] Could not save key: Key was nil")
-	}
-
-	db.SigningKey = key
-	db.SigningKeyID = id
-	//convert the public key to pem and store as our key object in the db
-	pemkey, err := keys.RSAPublicKeyToPEM(&key.PublicKey)
-	if err != nil {
-		log.Fatal("[ERROR] Could not convert key to pem")
-	}
-	//add the key to the map
-	keyStruct := KeyMetadata{
-		ID:           id,
-		KeyPem:       pemkey,
-		InvalidAfter: time.Now().Add(lifetime),
-	}
-
-	db.PublicKeys[id] = &keyStruct
-
-	//FIXME begin
-
-	bts, err := json.Marshal(keyStruct)
-	if err != nil {
-		log.Fatal("[ERROR] Could not marshall key")
-		return errors.New("[ERROR] Could not marshall key")
-	}
-
-	req, err := http.NewRequest("POST", "http://keystore.adrianosela.com/key", bytes.NewBuffer(bts))
-	if err != nil {
-		log.Fatal("[ERROR] Could not publish key to keystore")
-		return errors.New("[ERROR] Could not publish key to keystore")
-	}
-
-	cli := http.Client{}
-
-	resp, err := cli.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		log.Fatal("[ERROR] Could not publish key to keystore" + strconv.Itoa(resp.StatusCode))
-		return errors.New("[ERROR] Could not publish key to keystore")
-	}
-
-	//FIXME end
-
-	log.Printf("[KEYS] Added New Key: {\"id\":\"%s\"}", id)
-	return nil
-}
-
-//deleteKey will remove a key from the database
-func (db *MockDB) DeleteKey(id string) error {
-	db.Lock()
-	defer db.Unlock()
-	//delete the key
-	//if the entry exists then delete it
-	if _, ok := db.PublicKeys[id]; ok {
-		delete(db.PublicKeys, id)
-		log.Printf("[MOCK_DB] Deleted Key: {\"id\":\"%s\"}", id)
-		return nil
-	}
-	//if user not found
-	return fmt.Errorf("Key with id=%s not found in store", id)
-}
-
-func (db *MockDB) GetKeys() (map[string]*KeyMetadata, error) {
-	db.Lock()
-	defer db.Unlock()
-	return db.PublicKeys, nil
-}
-
 func removeStrFromSlice(str string, sli []string) ([]string, error) {
 	for idx, elem := range sli {
 		if elem == str {
@@ -249,104 +161,6 @@ func removeStrFromSlice(str string, sli []string) ([]string, error) {
 		}
 	}
 	return nil, errors.New("String Not Found")
-}
-
-func (db *MockDB) SharePubKeyHandler(w http.ResponseWriter, r *http.Request) {
-	keys, err := db.GetKeys()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR] : %v", err))
-		return
-	}
-
-	keyset := jose.JsonWebKeySet{
-		Keys: []jose.JsonWebKey{},
-	}
-
-	for kid, key := range keys {
-		keyset.Keys = append(keyset.Keys, jose.JsonWebKey{
-			Key:       key.KeyPem,
-			Algorithm: "RS512",
-			Use:       "sig",
-			KeyID:     kid,
-		})
-	}
-
-	keysBytes, err := json.Marshal(keyset)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR] : %v", err))
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(keysBytes))
-	return
-}
-
-type GetTokenResponse struct {
-	Token      string `json:"token"` //Spec recommends returning in the body to avoid header size limitations
-	ValidUntil int64  `json:"valid_until"`
-}
-
-func (db *MockDB) GetTokenHandler(w http.ResponseWriter, r *http.Request) {
-	//for now picking up basic auth but not actually using it
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR]: No basic credentials provided"))
-		return
-	}
-
-	if !db.PassedBasicAuth(username, password) {
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR]: Incorrect username or password"))
-		return
-	}
-
-	userID, err := db.GetUserID(username)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR]: User passed basic auth but no records found")) //think of something better later
-		return
-	}
-
-	claims := customJWT.NewCustomClaims(userID, "adrianosela/all", "http://localhost:8888", []string{}, time.Hour*1)
-
-	db.RLock()
-	//fill in group membership info
-	claims.Groups = db.getUserMemberGroups(userID)
-
-	//grab the signing key and id
-	signingKey := db.SigningKey
-	id := db.SigningKeyID
-
-	db.RUnlock()
-
-	jwt := customJWT.NewJWT(claims, jwtgo.SigningMethodRS512)
-
-	jwt.Header["sig_kid"] = id
-
-	stringToken, err := customJWT.SignJWT(jwt, signingKey)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR]: Could not sign key: %v", err)) //for now, later will want to hide
-		return
-	}
-
-	respBytes, err := json.Marshal(&GetTokenResponse{
-		Token:      stringToken,
-		ValidUntil: claims.ExpiresAt,
-	})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, fmt.Sprintf("[ERROR]: Could not marshall response: %v", err)) //for now, later will want to hide
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, string(respBytes)) //for now, later will want to hide
-	return
 }
 
 //GetUserID returns the user ID of a user given his/her username
@@ -420,7 +234,7 @@ func (db *MockDB) ShowGroupHandler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func (db *MockDB) getUserMemberGroups(userid string) []string {
+func (db *MockDB) GetUserMemberGroups(userid string) []string {
 	db.RLock()
 	defer db.RUnlock()
 	memberOf := []string{}

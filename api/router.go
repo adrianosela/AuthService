@@ -7,28 +7,28 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//RouterConfiguration includes the datastore and the identity provider
-type RouterConfiguration struct {
+//APIConfiguration includes the datastore, the keystore, and the identity provider
+type APIConfiguration struct {
 	DB           store.Datastore
 	Keystore     keystore.Keystore
 	IdentityProv *openidconnect.OpenIDProvider
 }
 
-//GetRouter returns a router given a router configuration
-func GetRouter(rtrConfig *RouterConfiguration) *mux.Router {
+//GetRouter returns a router given an APIConfiguration
+func GetRouter(api *APIConfiguration) *mux.Router {
 
 	router := mux.NewRouter()
 
 	// OpenID Connect Endpoints
-	router.Methods("GET").Path("/.well-known/webfinder").HandlerFunc(rtrConfig.IdentityProv.OpenIDConfigDiscovery)
-	router.Methods("GET").Path("/auth/keys").HandlerFunc(rtrConfig.Keystore.SharePubKeyHandler)
+	router.Methods("GET").Path("/.well-known/webfinder").HandlerFunc(api.IdentityProv.OpenIDConfigDiscovery)
+	router.Methods("GET").Path("/auth/keys").HandlerFunc(api.Keystore.SharePubKeyHandler)
 
 	// Basic Auth Endpoints --> Emitting JWT Tokens
-	router.Methods("GET").Path("/auth/login").HandlerFunc(rtrConfig.DB.GetTokenHandler)
+	router.Methods("GET").Path("/auth/login").HandlerFunc(api.GetTokenHandler)
 
 	// Groups Mgmt Endpoints
-	router.Methods("GET").Path("/groups").HandlerFunc(rtrConfig.DB.ListGroupsHandler)
-	router.Methods("GET").Path("/groups/{group_id}").HandlerFunc(rtrConfig.DB.ShowGroupHandler)
+	router.Methods("GET").Path("/groups").HandlerFunc(api.DB.ListGroupsHandler)
+	router.Methods("GET").Path("/groups/{group_id}").HandlerFunc(api.DB.ShowGroupHandler)
 
 	return router
 }

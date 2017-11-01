@@ -8,7 +8,8 @@ import (
 
 //Keystore represents an interface capable of storing and fetching public Keys
 type Keystore interface {
-	SavePubKey(string, *rsa.PublicKey, time.Duration) error
+	SetKeyPair(string, *rsa.PrivateKey, time.Duration) error
 	GetPubKeys() (map[string]*rsa.PublicKey, error)
+	GetSigningKey() (*rsa.PrivateKey, string, error)
 	SharePubKeyHandler(http.ResponseWriter, *http.Request)
 }
