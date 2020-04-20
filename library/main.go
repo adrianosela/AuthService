@@ -23,7 +23,7 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		cli.Command{
+		{
 			Name:   "validate",
 			Usage:  "Validate a given JWT",
 			Action: validate,
