@@ -1,4 +1,4 @@
-package customJWT
+package cjwt
 
 import (
 	"crypto/rsa"

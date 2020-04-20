@@ -23,7 +23,7 @@ func main() {
 		KeysURL:   os.Getenv("IDP_ISSUER_URL") + "/auth/keys",
 	}
 
-	ks, err := keystore.NewMockKeystore()
+	ks, err := keystore.NewRESTKeystore()
 	if err != nil {
 		log.Fatalf("[ERROR] Could not initialize keystore. %s", err)
 	}

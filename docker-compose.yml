@@ -6,7 +6,7 @@ services:
     ports:
      - "8080:80"
   identity_provider_A:
-    image: authservice
+    image: auth-image
     build: .
     ports:
      - "8081:80"
@@ -15,7 +15,7 @@ services:
     depends_on:
      - "keystore.adrianosela.com"
   identity_provider_B:
-    image: authservice
+    image: auth-image
     build: .
     ports:
      - "8082:80"
@@ -24,7 +24,7 @@ services:
     depends_on:
      - "keystore.adrianosela.com"
   identity_provider_C:
-    image: authservice
+    image: auth-image
     build: .
     ports:
      - "8083:80"

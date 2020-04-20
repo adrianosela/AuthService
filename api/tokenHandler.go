@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adrianosela/auth/customJWT"
+	"github.com/adrianosela/auth/cjwt"
 	jwtgo "github.com/dgrijalva/jwt-go"
 )
 
@@ -38,7 +38,7 @@ func (api *APIConfiguration) GetTokenHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	claims := customJWT.NewCustomClaims(userID, "adrianosela/all", api.IdentityProv.IssuerURL, []string{}, time.Hour*1)
+	claims := cjwt.NewCustomClaims(userID, "adrianosela/all", api.IdentityProv.IssuerURL, []string{}, time.Hour*1)
 
 	//fill in group membership info
 	claims.Groups = api.DB.GetUserMemberGroups(userID)
@@ -51,11 +51,11 @@ func (api *APIConfiguration) GetTokenHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	jwt := customJWT.NewJWT(claims, jwtgo.SigningMethodRS512)
+	jwt := cjwt.NewJWT(claims, jwtgo.SigningMethodRS512)
 
 	jwt.Header["sig_kid"] = id
 
-	stringToken, err := customJWT.SignJWT(jwt, signingKey)
+	stringToken, err := cjwt.SignJWT(jwt, signingKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, fmt.Sprintf("[ERROR]: Could not sign key: %v", err)) //for now, later will want to hide
