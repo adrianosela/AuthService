@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/adrianosela/AuthService/library/jwtvalidation"
+	"github.com/adrianosela/auth/library/jwtvalidation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 

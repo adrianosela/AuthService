@@ -11,15 +11,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adrianosela/AuthService/customJWT"
-	"github.com/adrianosela/AuthService/openidconnect"
+	"github.com/adrianosela/auth/cjwt"
+	"github.com/adrianosela/auth/openidconnect"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat/go-jwx/jwk"
 )
 
 //ValidateToken returns the claims within a token as a CustomClaims obect and validates its fields
-func ValidateToken(tkString, iss, aud, authProvEndpoint string, grps []string) (*customJWT.CustomClaims, error) {
-	var cc customJWT.CustomClaims
+func ValidateToken(tkString, iss, aud, authProvEndpoint string, grps []string) (*cjwt.CustomClaims, error) {
+	var cc cjwt.CustomClaims
 	//parse onto a jwt token object. Note the in-line use of the KeyFunc type
 	token, err := jwt.ParseWithClaims(tkString, &cc, func(tk *jwt.Token) (interface{}, error) {
 		//read the key id off the token header
