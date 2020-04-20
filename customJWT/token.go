@@ -32,7 +32,7 @@ func NewCustomClaims(sub, aud, iss string, grps []string, lifetime time.Duration
 		StandardClaims: jwt.StandardClaims{
 			Audience:  aud,
 			ExpiresAt: time.Now().Add(lifetime).Unix(),
-			Id:        uuid.NewV4().String(),
+			Id:        uuid.Must(uuid.NewV4()).String(),
 			IssuedAt:  time.Now().Unix(),
 			Issuer:    iss,
 			NotBefore: time.Now().Unix(),

@@ -1,19 +1,23 @@
+NAME:=$(shell basename `git rev-parse --show-toplevel`)
+HASH:=$(shell git rev-parse --verify --short HEAD)
+
 all: build
 
 clean:
 	rm -rf pkg bin
 
 deploy: dockerbuild down
-	docker run -d --name authentication_service -p 8888:8888 authservice
+	docker run -d --name $(NAME)-container -p 8888:8888 $(NAME)-image
 
 up: build
-	./AuthService
+	./$(NAME)
 
 dockerbuild:
-	./dockerbuild.sh
+	GOOS=linux GOARCH=amd64 go build -a -o $(NAME)
+	docker build -t $(NAME)-image .
 
 build:
-	go build -o ./AuthService
+	go build -o $(NAME)
 
 down:
-	(docker stop authentication_service || true) && (docker rm authentication_service || true)
+	(docker stop $(NAME)-container || true) && (docker rm $(NAME)-container || true)

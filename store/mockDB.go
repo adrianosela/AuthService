@@ -109,11 +109,11 @@ func (db *MockDB) RemoveUserFromGroup(userID, groupID, membershipType string) er
 	return fmt.Errorf("Group with id=%s not found in store", groupID)
 }
 
-//addUser will add a new user to the database
+// AddUser will add a new user to the database
 func (db *MockDB) AddUser(username, password, email string) (string, error) {
 	usr := &User{
 		Email: email,
-		ID:    uuid.NewV4().String(),
+		ID:    uuid.Must(uuid.NewV4()).String(),
 	}
 
 	passbytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

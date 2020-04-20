@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/adrianosela/AuthService/customJWT"
+	"github.com/adrianosela/auth/customJWT"
 	jwtgo "github.com/dgrijalva/jwt-go"
 )
 

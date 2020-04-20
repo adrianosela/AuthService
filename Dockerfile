@@ -2,8 +2,9 @@ FROM alpine:3.5
 
 RUN apk add --update bash curl && rm -rf /var/cache/apk/*
 
-ADD AuthService /bin/AuthService
+ADD auth /bin/auth
 
-EXPOSE 8888
+EXPOSE 80
+EXPOSE 443
 
-CMD ["/bin/AuthService"]
+CMD ["/bin/auth"]

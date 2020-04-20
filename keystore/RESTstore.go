@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/adrianosela/AuthService/keys"
+	"github.com/adrianosela/auth/keys"
 	"github.com/adrianosela/Keystore/keystoreapi"
 	jwt "github.com/dgrijalva/jwt-go"
 	jose "github.com/square/go-jose"

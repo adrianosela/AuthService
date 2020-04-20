@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/adrianosela/AuthService/keystore"
-	"github.com/adrianosela/AuthService/openidconnect"
-	"github.com/adrianosela/AuthService/store"
+	"github.com/adrianosela/auth/keystore"
+	"github.com/adrianosela/auth/openidconnect"
+	"github.com/adrianosela/auth/store"
 	"github.com/gorilla/mux"
 )
 
