@@ -1,11 +1,11 @@
 version: '3'
 services:
-  keystore.adrianosela.com: #because I own adrianosela.com
+  keystore.adrianosela.com:
     image: keystore
     build: ../Keystore/
     ports:
      - "8080:80"
-  identity_provider_A:
+  idp-a.adrianosela.com:
     image: auth-image
     build: .
     ports:
@@ -14,7 +14,7 @@ services:
      - IDP_ISSUER_URL=http://localhost:8081
     depends_on:
      - "keystore.adrianosela.com"
-  identity_provider_B:
+  idp-b.adrianosela.com:
     image: auth-image
     build: .
     ports:
@@ -23,7 +23,7 @@ services:
      - IDP_ISSUER_URL=http://localhost:8082
     depends_on:
      - "keystore.adrianosela.com"
-  identity_provider_C:
+  idp-c.adrianosela.com:
     image: auth-image
     build: .
     ports:
