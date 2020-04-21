@@ -1,34 +1,34 @@
 version: '3'
 services:
-  keystore.adrianosela.com:
-    image: keystore
-    build: ../Keystore/
+  keystore.us-west-2.adrianosela.com:
+    image: keystore-image
+    build: ../keystore
     ports:
-     - "8080:80"
-  idp-a.adrianosela.com:
+     - 8080:80
+  idp.us-west-2.adrianosela.com:
     image: auth-image
     build: .
     ports:
-     - "8081:80"
+     - 8081:80
     environment:
      - IDP_ISSUER_URL=http://localhost:8081
     depends_on:
-     - "keystore.adrianosela.com"
-  idp-b.adrianosela.com:
+     - keystore.us-west-2.adrianosela.com
+  idp.sa-east-1.adrianosela.com:
     image: auth-image
     build: .
     ports:
-     - "8082:80"
+     - 8082:80
     environment:
      - IDP_ISSUER_URL=http://localhost:8082
     depends_on:
-     - "keystore.adrianosela.com"
-  idp-c.adrianosela.com:
+     - keystore.us-west-2.adrianosela.com
+  idp.eu-west-1.adrianosela.com:
     image: auth-image
     build: .
     ports:
-     - "8083:80"
+     - 8083:80
     environment:
      - IDP_ISSUER_URL=http://localhost:8083
     depends_on:
-     - "keystore.adrianosela.com"
+     - keystore.us-west-2.adrianosela.com

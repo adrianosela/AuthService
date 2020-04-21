@@ -6,11 +6,8 @@ all: build
 clean:
 	rm -rf pkg bin
 
-deploy: dockerbuild down
-	docker run -d --name $(NAME)-container -p 8888:8888 $(NAME)-image
-
-up: build
-	./$(NAME)
+up: dockerbuild
+	docker-compose up
 
 dockerbuild: dep 
 	GOOS=linux GOARCH=amd64 go build -a -o $(NAME)

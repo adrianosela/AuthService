@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/adrianosela/auth/keystore"
 	"github.com/adrianosela/auth/idp"
+	"github.com/adrianosela/auth/keystore"
 	"github.com/adrianosela/auth/store"
 	"github.com/gorilla/mux"
 )

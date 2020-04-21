@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/adrianosela/auth/api"
+	"github.com/adrianosela/auth/idp"
 	"github.com/adrianosela/auth/keys"
 	"github.com/adrianosela/auth/keystore"
-	"github.com/adrianosela/auth/idp"
 	"github.com/adrianosela/auth/store"
 	uuid "github.com/satori/go.uuid"
 )

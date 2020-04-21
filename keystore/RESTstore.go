@@ -20,7 +20,7 @@ import (
 
 var (
 	//RESTkeystoreURL is our keystore service URL
-	RESTkeystoreURL = "http://keystore.adrianosela.com"
+	RESTkeystoreURL = "http://keystore.us-west-2.adrianosela.com"
 )
 
 //RESTKeystore is a client of my own REST keystore found in github.com/adrianosela/Keystore
