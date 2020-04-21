@@ -12,7 +12,7 @@ deploy: dockerbuild down
 up: build
 	./$(NAME)
 
-dockerbuild: vet
+dockerbuild: dep 
 	GOOS=linux GOARCH=amd64 go build -a -o $(NAME)
 	docker build -t $(NAME)-image .
 
