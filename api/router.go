@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/adrianosela/auth/keystore"
-	"github.com/adrianosela/auth/openidconnect"
+	"github.com/adrianosela/auth/idp"
 	"github.com/adrianosela/auth/store"
 	"github.com/gorilla/mux"
 )
@@ -11,7 +11,7 @@ import (
 type APIConfiguration struct {
 	DB           store.Datastore
 	Keystore     keystore.Keystore
-	IdentityProv *openidconnect.OpenIDProvider
+	IdentityProv *idp.OpenIDProvider
 }
 
 //GetRouter returns a router given an APIConfiguration

@@ -11,14 +11,13 @@ import (
 	"github.com/adrianosela/auth/api"
 	"github.com/adrianosela/auth/keys"
 	"github.com/adrianosela/auth/keystore"
-	"github.com/adrianosela/auth/openidconnect"
+	"github.com/adrianosela/auth/idp"
 	"github.com/adrianosela/auth/store"
 	uuid "github.com/satori/go.uuid"
 )
 
 func main() {
-
-	idp := &openidconnect.OpenIDProvider{
+	idprovider := &idp.OpenIDProvider{
 		IssuerURL: os.Getenv("IDP_ISSUER_URL"),
 		KeysURL:   os.Getenv("IDP_ISSUER_URL") + "/auth/keys",
 	}
@@ -29,61 +28,21 @@ func main() {
 	}
 
 	APIConfig := &api.APIConfiguration{
-		IdentityProv: idp,
+		IdentityProv: idprovider,
 		DB:           store.NewMockDB(),
 		Keystore:     ks,
 	}
-
-	//crate some example users
-	adrianoID, _ := APIConfig.DB.AddUser("adriano", uuid.Must(uuid.NewV4()).String(), "adriano@gmail.com")
-	miguelID, _ := APIConfig.DB.AddUser("miguel", uuid.Must(uuid.NewV4()).String(), "miguel@gmail.com")
-	felipeID, _ := APIConfig.DB.AddUser("felipe", uuid.Must(uuid.NewV4()).String(), "felipe@gmail.com")
-	adrianID, _ := APIConfig.DB.AddUser("adrian", uuid.Must(uuid.NewV4()).String(), "adrian@gmail.com")
-	antonioID, _ := APIConfig.DB.AddUser("antonio", uuid.Must(uuid.NewV4()).String(), "antonio@gmail.com")
-
-	APIConfig.DB.AddGroup(&store.Group{
-		ID:          uuid.Must(uuid.NewV4()).String(),
-		Name:        "Everyone",
-		Description: "Every Test User",
-		Members:     []string{adrianoID, miguelID, felipeID, adrianID, antonioID},
-		Owners:      []string{adrianoID},
-	})
-	APIConfig.DB.AddGroup(&store.Group{
-		ID:          uuid.Must(uuid.NewV4()).String(),
-		Name:        "Developers",
-		Description: "Developer Test Users",
-		Members:     []string{adrianoID, miguelID, felipeID},
-		Owners:      []string{adrianoID},
-	})
-	APIConfig.DB.AddGroup(&store.Group{
-		ID:          uuid.Must(uuid.NewV4()).String(),
-		Name:        "Infrastructure",
-		Description: "Infrastructure Test Users",
-		Members:     []string{adrianoID, felipeID},
-		Owners:      []string{adrianoID, felipeID},
-	})
-	APIConfig.DB.AddGroup(&store.Group{
-		ID:          uuid.Must(uuid.NewV4()).String(),
-		Name:        "GameServer",
-		Description: "GameServer Allow-Join Users",
-		Members:     []string{adrianoID, miguelID, adrianID},
-		Owners:      []string{adrianoID},
-	})
 
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		log.Fatal("[ERROR] Could not generate Keys")
 	}
-
 	block, err := keys.RSAPublicKeyToPEM(&key.PublicKey)
 	if err != nil {
 		log.Fatal("[ERROR] Could not convert key to PEM")
 	}
-
 	id := uuid.Must(uuid.NewV4()).String()
-
 	log.Printf("[INFO] Generated New Key-Pair: {\"id\":\"%s\"}\n%s", id, string(block))
-
 	err = APIConfig.Keystore.SetKeyPair(id, key, time.Duration(time.Hour*12))
 	if err != nil {
 		log.Fatalf("[ERROR] Could not set Key: %v", err)
@@ -95,5 +54,4 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe Error: ", err)
 	}
-
 }

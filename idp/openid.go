@@ -1,4 +1,4 @@
-package openidconnect
+package idp
 
 import (
 	"encoding/json"

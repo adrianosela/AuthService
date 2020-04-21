@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/adrianosela/auth/cjwt"
-	"github.com/adrianosela/auth/openidconnect"
+	"github.com/adrianosela/auth/idp"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat/go-jwx/jwk"
 )
@@ -46,7 +46,7 @@ func ValidateToken(tkString, iss, aud, authProvEndpoint string, grps []string) (
 			return nil, err
 		}
 		//unmarshall bytes onto the struct
-		var discoverystruct openidconnect.OpenIDDiscoveryConfig
+		var discoverystruct idp.OpenIDDiscoveryConfig
 		err = json.Unmarshal(respBytes, &discoverystruct)
 		if err != nil {
 			return nil, err
