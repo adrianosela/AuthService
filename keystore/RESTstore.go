@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/adrianosela/Keystore/keystoreapi"
 	"github.com/adrianosela/auth/keys"
+	"github.com/adrianosela/keystore/api"
 	jwt "github.com/dgrijalva/jwt-go"
 	jose "github.com/square/go-jose"
 )
@@ -27,7 +27,7 @@ var (
 type RESTKeystore struct {
 	sync.RWMutex //inherit read/write lock behavior
 	HTTPClient   http.Client
-	CachedKeys   map[string]*keystoreAPI.KeyMetadata `json:"keys"`
+	CachedKeys   map[string]*api.KeyMetadata `json:"keys"`
 	SigningKey   *rsa.PrivateKey
 	SigningKeyID string
 }
@@ -39,7 +39,7 @@ func NewRESTKeystore() (*RESTKeystore, error) {
 		HTTPClient: http.Client{
 			Timeout: time.Duration(time.Second * 15), //a sane timeout
 		},
-		CachedKeys: map[string]*keystoreAPI.KeyMetadata{},
+		CachedKeys: map[string]*api.KeyMetadata{},
 	}
 	err := ks.refreshCache()
 	if err != nil {
@@ -64,7 +64,7 @@ func (ks *RESTKeystore) SetKeyPair(keyID string, keyPair *rsa.PrivateKey, lifesp
 		return fmt.Errorf("Could not convert key: %s, to pem. %s", keyID, err)
 	}
 	//put it in the KeyMetadata struct
-	keyMeta := keystoreAPI.KeyMetadata{
+	keyMeta := api.KeyMetadata{
 		ID:           keyID,
 		InvalidAfter: time.Now().Add(lifespan),
 		KeyPem:       pemKey,
@@ -141,7 +141,7 @@ func (ks *RESTKeystore) refreshCache() error {
 	return nil
 }
 
-func (ks *RESTKeystore) getKeyMetadata(keyID string) (*keystoreAPI.KeyMetadata, error) {
+func (ks *RESTKeystore) getKeyMetadata(keyID string) (*api.KeyMetadata, error) {
 	//create the http request to get the Key
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/key/%s", RESTkeystoreURL, keyID), nil)
 	if err != nil {
@@ -162,7 +162,7 @@ func (ks *RESTKeystore) getKeyMetadata(keyID string) (*keystoreAPI.KeyMetadata, 
 		if err != nil {
 			continue
 		}
-		var keyMeta keystoreAPI.KeyMetadata
+		var keyMeta api.KeyMetadata
 		err = json.Unmarshal(jsonBytes, &keyMeta)
 		if err != nil {
 			continue
@@ -190,7 +190,7 @@ func (ks *RESTKeystore) getKeyIDs() ([]string, error) {
 		return nil, errors.New("Could not read response for keys")
 	}
 	//unmarshall onto a type dictated by the keystore API
-	var list keystoreAPI.GetKeyListOutput
+	var list api.GetKeyListOutput
 	err = json.Unmarshal(respBytes, &list)
 	if err != nil {
 		return nil, err //errors.New("Could not unmashall keystore list response")
