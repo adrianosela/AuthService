@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/adrianosela/auth/library/jwtvalidation"
+	"github.com/adrianosela/auth/lib/validation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -78,7 +78,7 @@ func validate(ctx *cli.Context) error {
 		grps = []string{}
 	}
 
-	cc, err := jwtvalidation.ValidateToken(tkString, iss, aud, authProviderEndpoint, grps)
+	cc, err := validation.ValidateToken(tkString, iss, aud, authProviderEndpoint, grps)
 	if err != nil {
 		return fmt.Errorf("[ERROR] Could not validate JWT: %s", err)
 	}

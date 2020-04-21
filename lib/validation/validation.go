@@ -1,4 +1,4 @@
-package jwtvalidation
+package validation
 
 import (
 	"crypto/x509"
