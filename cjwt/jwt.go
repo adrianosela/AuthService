@@ -3,16 +3,13 @@ package cjwt
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"time"
 
-	"github.com/adrianosela/auth/idp"
+	"github.com/adrianosela/auth/openid"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat/go-jwx/jwk"
 )
@@ -28,7 +25,7 @@ func SignJWT(tk *jwt.Token, key *rsa.PrivateKey) (string, error) {
 }
 
 // ValidateJWT returns the claims within a token as a CustomClaims obect and validates its fields
-func ValidateJWT(tkString, iss, aud, idpURL string, grps []string) (*CustomClaims, error) {
+func ValidateJWT(tkString, iss, aud, url string, grps []string) (*CustomClaims, error) {
 	var cc CustomClaims
 	// parse onto a jwt token object. Note the in-line use of the KeyFunc type
 	token, err := jwt.ParseWithClaims(tkString, &cc, func(tk *jwt.Token) (interface{}, error) {
@@ -37,38 +34,18 @@ func ValidateJWT(tkString, iss, aud, idpURL string, grps []string) (*CustomClaim
 		if !ok {
 			return nil, errors.New("Signing Key ID Not in Token Header")
 		}
-		// get the .well-known configuration
-		req, err := http.NewRequest(http.MethodGet, idpURL+"/.well-known/webfinder", nil)
+		config, err := openid.Fetch(url)
 		if err != nil {
-			return nil, err
-		}
-		client := http.Client{
-			Timeout: time.Minute * 1,
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		// read the bytes off the response body
-		respBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		// unmarshall bytes onto the struct
-		var discoverystruct idp.OpenIDDiscoveryConfig
-		err = json.Unmarshal(respBytes, &discoverystruct)
-		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not fetch openid config: %s", err)
 		}
 		// now get the keys from that endpoint
-		keyset, err := jwk.FetchHTTP(discoverystruct.KeysEndpoint)
+		keyset, err := jwk.FetchHTTP(config.KeysEndpoint)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to get keys from the endpoint specified by the provider's discovery endpoint: %s. %v", discoverystruct.KeysEndpoint, err)
+			return nil, fmt.Errorf("Failed to get keys from the endpoint specified by the provider's discovery endpoint: %s. %v", config.KeysEndpoint, err)
 		}
 		// if no keys exposed, return error
 		if len(keyset.Keys) < 1 {
-			return nil, fmt.Errorf("No keys found from keys endpoint (%s)", discoverystruct.KeysEndpoint)
+			return nil, fmt.Errorf("No keys found from keys endpoint (%s)", config.KeysEndpoint)
 		}
 		// materialize the keys onto an ID to Key map
 		kidtoKeyMAP := map[string]interface{}{}

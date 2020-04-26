@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/adrianosela/auth/cjwt"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/adrianosela/auth/cjwt"
 
 	cli "gopkg.in/urfave/cli.v1"
 )

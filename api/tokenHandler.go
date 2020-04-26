@@ -16,7 +16,7 @@ type GetTokenResponse struct {
 }
 
 //GetTokenHandler is an HTTP handler that takes in basic auth, and gives the user a JWT
-func (api *APIConfiguration) GetTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (api *Configuration) GetTokenHandler(w http.ResponseWriter, r *http.Request) {
 	//for now picking up basic auth but not actually using it
 	username, password, ok := r.BasicAuth()
 	if !ok {
@@ -38,7 +38,7 @@ func (api *APIConfiguration) GetTokenHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	claims := cjwt.NewCustomClaims(userID, "adrianosela/all", api.IdentityProv.IssuerURL, []string{}, time.Hour*1)
+	claims := cjwt.NewCustomClaims(userID, "adrianosela/all", api.OpenID.Issuer, []string{}, time.Hour*1)
 
 	//fill in group membership info
 	claims.Groups = api.DB.GetUserMemberGroups(userID)
