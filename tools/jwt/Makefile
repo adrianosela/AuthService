@@ -5,7 +5,7 @@ clean:
 
 build:  dep
 	go build -o jwt
-	cp ./jwt /usr/local/bin
+	cp jwt /usr/local/bin
 
 dep:
 	 go get -v
