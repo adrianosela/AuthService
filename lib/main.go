@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/adrianosela/auth/cjwt"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/adrianosela/auth/lib/validation"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -74,11 +74,11 @@ func validate(ctx *cli.Context) error {
 	aud := ctx.String("aud")
 
 	grps := strings.Split(groupString, ",")
-	if groupString == "" { //split function returns 1 empty string if an empty string is split
+	if groupString == "" { // split function returns 1 empty string if an empty string is split
 		grps = []string{}
 	}
 
-	cc, err := validation.ValidateToken(tkString, iss, aud, authProviderEndpoint, grps)
+	cc, err := cjwt.ValidateJWT(tkString, iss, aud, authProviderEndpoint, grps)
 	if err != nil {
 		return fmt.Errorf("[ERROR] Could not validate JWT: %s", err)
 	}

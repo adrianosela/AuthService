@@ -3,12 +3,9 @@ all: build
 clean:
 	rm -rf pkg bin
 
-build:  vet
+build:  dep
 	go build -o jwt
 	cp ./jwt /usr/local/bin
 
-vet: dependencies
-	 go vet -x
-
-dependencies:
+dep:
 	 go get -v
