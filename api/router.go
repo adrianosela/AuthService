@@ -3,13 +3,13 @@ package api
 import (
 	"github.com/adrianosela/auth/keystore"
 	"github.com/adrianosela/auth/openid"
-	"github.com/adrianosela/auth/store"
+	"github.com/adrianosela/auth/storage"
 	"github.com/gorilla/mux"
 )
 
 // Configuration includes the datastore, the keystore, and the identity provider
 type Configuration struct {
-	DB       store.Datastore
+	DB       storage.Datastore
 	Keystore keystore.Keystore
 	OpenID   *openid.DiscoveryConfig
 }

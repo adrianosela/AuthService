@@ -12,7 +12,7 @@ import (
 	"github.com/adrianosela/auth/keys"
 	"github.com/adrianosela/auth/keystore"
 	"github.com/adrianosela/auth/openid"
-	"github.com/adrianosela/auth/store"
+	"github.com/adrianosela/auth/storage"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -24,7 +24,7 @@ func main() {
 
 	apiConfig := &api.Configuration{
 		OpenID:   openid.DefaultDiscoveryConfig(os.Getenv("IDP_ISSUER_URL")),
-		DB:       store.NewMockDB(),
+		DB:       storage.NewMockDB(),
 		Keystore: ks,
 	}
 
