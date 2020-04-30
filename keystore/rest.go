@@ -1,5 +1,8 @@
 package keystore
 
+// implementation matching the keystore
+// web service at github.com/adrianosela/keystore
+
 import (
 	"bytes"
 	"crypto/rsa"
