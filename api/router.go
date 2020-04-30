@@ -20,8 +20,7 @@ func GetRouter(conf *Configuration) *mux.Router {
 	router := mux.NewRouter()
 
 	// OpenID Connect Endpoints
-	h, _ := conf.OpenID.HTTPHandlerFunc()
-	router.Methods("GET").Path(openid.DefaultDiscoveryPath).HandlerFunc(h)
+	router.Methods("GET").Path(openid.DefaultDiscoveryPath).HandlerFunc(conf.OpenID.HTTPHandlerFunc())
 	router.Methods("GET").Path("/auth/keys").HandlerFunc(conf.Keystore.SharePubKeyHandler)
 
 	// Basic Auth Endpoints --> Emitting JWT Tokens

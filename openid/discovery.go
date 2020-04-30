@@ -108,14 +108,14 @@ func Fetch(url string) (*DiscoveryConfig, error) {
 
 // HTTPHandlerFunc returns an HTTP handler function for
 // the OpenID Discovery Configuration to be served at
-func (dc *DiscoveryConfig) HTTPHandlerFunc() (http.HandlerFunc, error) {
+func (dc *DiscoveryConfig) HTTPHandlerFunc() http.HandlerFunc {
 	configBytes, err := json.Marshal(&dc)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not marshal OpenID Connect Discovery Configuration")
+		panic(errors.Wrap(err, "could not marshal OpenID Connect Discovery Configuration"))
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, string(configBytes))
 		return
-	}), nil
+	})
 }
